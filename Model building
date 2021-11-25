@@ -1,1 +1,33 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import math as m
+pi = np.pi
+
+#density water
+rho = 1 
+
+#domain size
+dx = 0.1 #make domain size smaller to give a larger tau.
+L = 10
+
+#kinematic viscosity water
+nu = 1.0034e-3 #mm^2/s 
+nu = 10.034 #mm^2/s #make water more viscous
+
+
+#(sound) speed
+cs = 1.5e3 #speed of sound in water
+c = cs * np.sqrt(3)
+
+#time step
+dt = dx/c
+
+#pressure
+P = cs**2 * rho
+
+#relaxation time
+tau = 0.5 * (1+ 6*nu/(c**2 * dt))
+#dt = by design the parcels move 1 grid step per time step.
+
+
 
