@@ -13,7 +13,7 @@ import math as M
 v=10
 c_s=1.5e3 #speed of sound in water m/s
 dx=0.1 
-rho_0=1 
+rho_0=1000 
 L=10
 dt=dx/(c_s*np.sqrt(3))
 tau=1/2+3*v*dt/(dx**2)
