@@ -83,7 +83,7 @@ ej = np.array([[0,0],\
                [1,1],\
                [-1,1]])
 
-eb = np.array([0,3,4,1,2,6,5,8,7])
+eb = np.array([0,3,4,1,2,6,5,8,7]) #when it bounces of the boundary
 
 #Weights
 w = np.array([4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36])
