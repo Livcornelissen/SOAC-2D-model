@@ -11,10 +11,10 @@ def calc_u(f,e,c,rho):
     u = np.zeros([N+1,N+1,9,2])
     u[:,:,:,0] = np.multiply(np.tile(e[:,0],[N+1,N+1,1]),f)
     u[:,:,:,1] = np.multiply(np.tile(e[:,1],[N+1,N+1,1]),f)
-    pre = c*np.ones([N+1,N+1])/rho
+    #pre = c*np.ones([N+1,N+1])/rho
     for k in range(9):
-        u[:,:,k,0] = pre*u[:,:,k,0]
-        u[:,:,k,1] = pre*u[:,:,k,1]
+        u[:,:,k,0] = c/rho*u[:,:,k,0]
+        u[:,:,k,1] = c/rho*u[:,:,k,1]
     return np.sum(u,axis=2)
 
 def calc_s(e,u,c,w):
