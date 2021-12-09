@@ -9,9 +9,12 @@ def sys_var(dx,cs,v):
 
 def calc_u(f,e,c,rho):
     u = np.zeros([N+1,N+1,9,2])
-    for i in range(N+1):
-        for j in range(N+1):
-            u[i,j,:] = c/rho[i,j]*np.column_stack((np.multiply(e[:,0],f[i,j,:]),np.multiply(e[:,1],f[i,j,:])))
+    u[:,:,:,0] = np.multiply(np.tile(e[:,0],[N+1,N+1,1]),f)
+    u[:,:,:,1] = np.multiply(np.tile(e[:,1],[N+1,N+1,1]),f)
+    pre = c*np.ones([N+1,N+1])/rho
+    for k in range(9):
+        u[:,:,k,0] = pre*u[:,:,k,0]
+        u[:,:,k,1] = pre*u[:,:,k,1]
     return np.sum(u,axis=2)
 
 def calc_s(e,u,c,w):
@@ -23,12 +26,11 @@ def calc_s(e,u,c,w):
 
 def calc_f0(w,rho,s):
     f0 = np.zeros([N+1,N+1,9])
-    for i in range(N+1):
-        for j in range(N+1):
-            f0[i,j,:] = w*rho[i,j]+rho[i,j]*s[i,j]
+    for k in range(9):
+        f0[:,:,k] = w[k]*rho+rho*s[:,:,k]
     return f0
 
-def timestep(f,w,e,c,ej,tau):
+def timestep(f,w,e,c,ej,tau,eb):
     
     rho = np.sum(f,axis=2)
 
@@ -43,8 +45,11 @@ def timestep(f,w,e,c,ej,tau):
         for j in range(N+1):
             coord = (np.tile(np.array([i,j]),(9,1))+ej) % (N+1)
             for k in range(9):
-                fnew[i,j,k] = (1 - 1/tau)*f[coord[k][0],coord[k][1],k] + 1/tau*f0[coord[k][0],coord[k][1],k]
-    return u, fnew
+                if boundary[coord[k][0],coord[k][1]]:
+                    fnew[i,j,k] = (1 - 1/tau)*f[i,j,eb[k]] + 1/tau*f0[i,j,eb[k]]
+                else:
+                    fnew[i,j,k] = (1 - 1/tau)*f[coord[k][0],coord[k][1],k] + 1/tau*f0[coord[k][0],coord[k][1],k]
+    return u, fnew, rho
 
 #Parameters
 dx = 0.1
@@ -78,23 +83,49 @@ ej = np.array([[0,0],\
                [1,1],\
                [-1,1]])
 
+eb = np.array([0,3,4,1,2,6,5,8,7])
+
 #Weights
 w = np.array([4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36])
 
+#Choose boundary
+boundary = np.zeros([N+1,N+1])
+boundary[:,0] = 1
+boundary[:,-1] = 1
+boundary[0,:] = 1
+boundary[-1,:] = 1
+
 #Initial condition
 f = rho0*w*np.ones([N+1,N+1,9])
-f[int(N/2),:,:] = np.ones(9)
+f[int(N/2):int(N/2)+2,int(N/2):int(N/2)+2,:] = 2.1*rho0*w*np.ones(9)
 rho = np.sum(f,axis=2)
 
-fig = plt.figure()
-camera = Camera(fig)
+##fig = plt.figure()
+##camera = Camera(fig)
 
-for i in range(50):
-    u, f = timestep(f,w,e,c,ej,tau)
-    U = u[:,:,0]
-    V = u[:,:,1]
-    plt.quiver(X,Y,U,V)
-    camera.snap()
+for i in range(21):
+    u, f, rho = timestep(f,w,e,c,ej,tau)
+    
+##    U = u[:,:,0]
+##    V = u[:,:,1]
+##    uabs = U**2+V**2
+##    plt.imshow(uabs)
+##    plt.quiver(X,Y,U,V)
+##    camera.snap()
 
-animation = camera.animate()
-animation.save('animation.gif')
+##animation = camera.animate()
+##animation.save('animation.gif')
+
+U = u[:,:,0]
+V = u[:,:,1]
+uabs = U**2+V**2
+
+plt.figure()
+plt.imshow(uabs)
+
+plt.figure()
+plt.imshow(rho)
+
+##plt.figure()
+##plt.quiver(X,Y,V,-U)
+plt.show()
