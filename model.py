@@ -46,7 +46,7 @@ def timestep(f,w,e,c,ej,tau,eb):
             coord = (np.tile(np.array([i,j]),(9,1))+ej) % (N+1)
             for k in range(9):
                 if boundary[coord[k][0],coord[k][1]]:
-                    fnew[i,j,k] = (1 - 1/tau)*f[i,j,eb[k]] + 1/tau*f0[i,j,eb[k]]
+                    fnew[i,j,k] = f[i,j,eb[k]] #simply take the reflection. 
                 else:
                     fnew[i,j,k] = (1 - 1/tau)*f[coord[k][0],coord[k][1],k] + 1/tau*f0[coord[k][0],coord[k][1],k]
     return u, fnew, rho
