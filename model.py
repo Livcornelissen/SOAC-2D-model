@@ -19,9 +19,8 @@ def calc_u(f,e,c,rho):
 
 def calc_s(e,u,c,w):
     s = np.zeros([N+1,N+1,9])
-    for i in range(N+1):
-        for j in range(N+1):
-            s[i,j,:] = w*(3*np.dot(u[i,j],np.transpose(e))/c+4.5*(np.dot(u[i,j],np.transpose(e))**2/c**2)-1.5*np.dot(u[i,j],u[i,j])*np.ones(9)/c**2)
+    for k in range(9):
+        s[:,:,k] = w[k]*(3*np.sum(e[k]*u,axis=2)/c+4.5*np.sum(e[k]*u,axis=2)**2/c**2-1.5*np.sum(u*u,axis=2)/c**2)
     return s
 
 def calc_f0(w,rho,s):
@@ -30,7 +29,7 @@ def calc_f0(w,rho,s):
         f0[:,:,k] = w[k]*rho+rho*s[:,:,k]
     return f0
 
-def timestep(f,w,e,c,ej,tau,eb):
+def timestep(f,w,e,c,eb,tau):
     
     rho = np.sum(f,axis=2)
 
@@ -41,14 +40,9 @@ def timestep(f,w,e,c,ej,tau,eb):
     f0 = calc_f0(w,rho,s)
 
     fnew = np.zeros(np.shape(f))
-    for i in range(N+1):
-        for j in range(N+1):
-            coord = (np.tile(np.array([i,j]),(9,1))+ej) % (N+1)
-            for k in range(9):
-                if boundary[coord[k][0],coord[k][1]]:
-                    fnew[i,j,k] = f[i,j,eb[k]] #simply take the reflection. 
-                else:
-                    fnew[i,j,k] = (1 - 1/tau)*f[coord[k][0],coord[k][1],k] + 1/tau*f0[coord[k][0],coord[k][1],k]
+    for k in range(9):
+        fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1]))
+
     return u, fnew, rho
 
 #Parameters
@@ -57,6 +51,7 @@ N = 30
 cs = 1.5e3
 v = 10
 rho0 = 1e3
+T = 100
 
 #Calculate other parameters
 c, dt, tau = sys_var(dx,cs,v)
@@ -73,16 +68,6 @@ e = np.array([[0,0],\
               [-1,-1],\
               [1,-1]])
 
-ej = np.array([[0,0],\
-               [-1,0],\
-               [0,-1],\
-               [1,0],\
-               [0,1],\
-               [-1,-1],\
-               [1,-1],\
-               [1,1],\
-               [-1,1]])
-
 eb = np.array([0,3,4,1,2,7,8,5,6]) #when it bounces of the boundary
 
 #Weights
@@ -97,14 +82,14 @@ boundary[-1,:] = 1
 
 #Initial condition
 f = rho0*w*np.ones([N+1,N+1,9])
-f[int(N/2):int(N/2)+2,int(N/2):int(N/2)+2,:] = 2.1*rho0*w*np.ones(9)
+f[10,10,:] = 2.1*rho0*w*np.ones(9)
 rho = np.sum(f,axis=2)
 
 ##fig = plt.figure()
 ##camera = Camera(fig)
 
-for i in range(21):
-    u, f, rho = timestep(f,w,e,c,ej,tau)
+for i in range(T):
+    u, f, rho = timestep(f,w,e,c,eb,tau)
     
 ##    U = u[:,:,0]
 ##    V = u[:,:,1]
