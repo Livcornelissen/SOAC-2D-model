@@ -33,7 +33,8 @@ def timestep(f,w,e,c,eb,tau):
     rho = np.sum(f,axis=2)
 
     u = calc_u(f,e,c,rho)
-
+    u[:,:,1] = u[:,:,1] + dp/rho
+    
     s = calc_s(e,u,c,w)
 
     f0 = calc_f0(w,rho,s)
@@ -52,6 +53,7 @@ cs = 1.5e3
 v = 10
 rho0 = 1e3
 T = 5000
+dp = 1000
 
 #Calculate other parameters
 c, dt, tau = sys_var(dx,cs,v)
@@ -75,42 +77,45 @@ w = np.array([4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36])
 
 #Choose boundary
 boundary = np.zeros([M+1,N+1])
-boundary[:,0] = 1
-boundary[:,-1] = 1
 boundary[0,:] = 1
 boundary[-1,:] = 1
+boundary[1,int(N/4):int(N/4+3)] = 1
+boundary[2,int(N/4+1):int(N/4+3)] = 1
+boundary[3,int(N/4+2):int(N/4+3)] = 1
 
 boundary = boundary.astype(int)
 
 #Initial condition
 f = rho0*w*np.ones([M+1,N+1,9])
-f[:,1,:] = 2*rho0*w*np.ones(9)
-f[:,-2,:] = 0.5*rho0*w*np.ones(9)
 rho = np.sum(f,axis=2)
 
-##fig = plt.figure()
-##camera = Camera(fig)
+fig = plt.figure()
+camera = Camera(fig)
+
+cross = np.zeros(T)
 
 for i in range(T):
     u, f, rho = timestep(f,w,e,c,eb,tau)
-    f[:,1,:] = 2*rho0*w*np.ones(9)
-    f[:,-2,:] = 0.5*rho0*w*np.ones(9)
 
-##    plt.figure()
-##    plt.imshow(rho)
-##    U = u[:,:,0]
-##    V = u[:,:,1]
-##    uabs = U**2+V**2
-##    plt.imshow(rho)
-##    plt.quiver(X,Y,U,V)
-##    camera.snap()
+    cross[i] = u[10,150,1]
 
-##animation = camera.animate()
-##animation.save('animation.gif')
+    if i%(T/10)==0:
+        print(str(i/T*100)+'%')
+    
+    if i%1==0:
+        plt.imshow(rho)
+        U = u[:,:,0]
+        V = u[:,:,1]
+        uabs = U**2+V**2
+        plt.imshow(uabs)
+        camera.snap()
 
-U = u[:,:,0]
-V = u[:,:,1]
-uabs = U**2+V**2
+animation = camera.animate()
+animation.save('animation.gif')
+
+##U = u[:,:,0]
+##V = u[:,:,1]
+##uabs = U**2+V**2
 
 ##plt.figure()
 ##plt.imshow(uabs)
@@ -118,11 +123,16 @@ uabs = U**2+V**2
 ##plt.figure()
 ##plt.imshow(rho)
 
-plt.figure()
-plt.quiver(X,Y,V,-U)
+##plt.figure()
+##plt.quiver(X,Y,V*10,-U*10)
 
 ##plt.figure()
 ##plt.plot(U[:,150])
 ##plt.figure()
 ##plt.plot(V[:,150])
+
+##print(dx*M*u[10,150,1]/v)
+
+##plt.figure()
+##plt.plot(cross)
 plt.show()
