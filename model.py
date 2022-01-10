@@ -2,6 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from celluloid import Camera
 
+#Parameters
+dx = 0.1        #Grid point size
+M = 20          #Height of domain
+N = 200         #Width of domain
+cs = 1.5e3      #Speed of sound
+v = 10          #Viscocity
+rho0 = 1e3      #Density
+T = 5000        #Amount of time steps
+dp = 100        #Pressure gradient
+tube = True     #Flow in a tube
+bump = True     #Bump on side of tube
+obst = 0        #0 = none, 1 = square, 2 = circle
+c_x = 0         #x center of obstacle
+c_y = 0         #y center of obstacle
+r = 0           #radius of obstacle
+visual = 2      #0 = none, 1 = animation, 2 = velocity at one point
+
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
     dt = dx/c
@@ -29,7 +46,6 @@ def calc_f0(w,rho,s):
     return f0
 
 def timestep(f,w,e,c,eb,tau):
-    
     rho = np.sum(f,axis=2)
 
     u = calc_u(f,e,c,rho)
@@ -45,18 +61,31 @@ def timestep(f,w,e,c,eb,tau):
 
     return u, fnew, rho
 
-#Parameters
-dx = 0.1
-M = 20
-N = 200
-cs = 1.5e3
-v = 10
-rho0 = 1e3
-T = 5000
-dp = 1000
+def draw_boundary(tube,bump,obst,c_x,c_y,r):
+    boundary = np.zeros([M+1,N+1])
+
+    if tube:
+        boundary[0,:] = 1
+        boundary[-1,:] = 1
+
+    if bump:
+        boundary[1,int(N/5):int(N/5+3)] = 1
+        boundary[2,int(N/5+1):int(N/5+3)] = 1
+        boundary[3,int(N/5+2):int(N/5+3)] = 1
+
+    if obst == 1:
+        boundary[c_x-r:c_x+r,c_y-r:c_y+r] = 1
+    elif obst == 2:
+        x, y = numpy.mgrid[:M+1,:N+1]
+        boundary[np.where((x-c_x)**2+(y-c_y)**2<=r**2)] = 1
+
+    return boundary.astype(int)
 
 #Calculate other parameters
 c, dt, tau = sys_var(dx,cs,v)
+boundary = draw_boundary(tube,bump,obst,c_x,c_y,r)
+
+#Create grid
 X, Y = np.meshgrid(dx*np.arange(0,M+1),dx*np.arange(0,N+1))
 
 #Unit vectors
@@ -70,69 +99,47 @@ e = np.array([[0,0],\
               [-1,-1],\
               [1,-1]])
 
-eb = np.array([0,3,4,1,2,7,8,5,6]) #when it bounces of the boundary
+#When it bounces of the boundary
+eb = np.array([0,3,4,1,2,7,8,5,6]) 
 
 #Weights
 w = np.array([4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36])
-
-#Choose boundary
-boundary = np.zeros([M+1,N+1])
-boundary[0,:] = 1
-boundary[-1,:] = 1
-boundary[1,int(N/4):int(N/4+3)] = 1
-boundary[2,int(N/4+1):int(N/4+3)] = 1
-boundary[3,int(N/4+2):int(N/4+3)] = 1
-
-boundary = boundary.astype(int)
 
 #Initial condition
 f = rho0*w*np.ones([M+1,N+1,9])
 rho = np.sum(f,axis=2)
 
-fig = plt.figure()
-camera = Camera(fig)
-
-cross = np.zeros(T)
+if visual == 1:
+    fig = plt.figure()
+    camera = Camera(fig)
+elif visual == 2:
+    point = np.zeros(T)
 
 for i in range(T):
     u, f, rho = timestep(f,w,e,c,eb,tau)
 
-    cross[i] = u[10,150,1]
-
     if i%(T/10)==0:
-        print(str(i/T*100)+'%')
-    
-    if i%1==0:
-        plt.imshow(rho)
-        U = u[:,:,0]
-        V = u[:,:,1]
-        uabs = U**2+V**2
-        plt.imshow(uabs)
-        camera.snap()
+        print('Simulation at '+str(round(i/T*100))+'%')
 
-animation = camera.animate()
-animation.save('animation.gif')
+    if visual == 1:
+        if i%10==0:
+            U = u[:,:,0]
+            V = u[:,:,1]
+            uabs = U**2+V**2
+            plt.imshow(uabs)
+            camera.snap()
+    elif visual == 2:
+        point[i] = u[10,150,1]
 
-##U = u[:,:,0]
-##V = u[:,:,1]
-##uabs = U**2+V**2
+print('Simulation at 100%')
 
-##plt.figure()
-##plt.imshow(uabs)
+print('Re = '+str(round(dx*M*np.max(u[:,:,1])/v,2)))
 
-##plt.figure()
-##plt.imshow(rho)
-
-##plt.figure()
-##plt.quiver(X,Y,V*10,-U*10)
-
-##plt.figure()
-##plt.plot(U[:,150])
-##plt.figure()
-##plt.plot(V[:,150])
-
-##print(dx*M*u[10,150,1]/v)
-
-##plt.figure()
-##plt.plot(cross)
-plt.show()
+if visual == 1:
+    animation = camera.animate()
+    animation.save('animation.gif')
+    plt.show()
+elif visual == 2:
+    plt.figure()
+    plt.plot(point)
+    plt.show()
