@@ -4,20 +4,20 @@ from celluloid import Camera
 
 #Parameters
 dx = 0.1        #Grid point size
-M = 20          #Height of domain
+M = 100          #Height of domain
 N = 200         #Width of domain
 cs = 1.5e3      #Speed of sound
 v = 10          #Viscocity
 rho0 = 1e3      #Density
-T = 5000        #Amount of time steps
-dp = 100        #Pressure gradient
-tube = True     #Flow in a tube
-bump = True     #Bump on side of tube
-obst = 0        #0 = none, 1 = square, 2 = circle
-c_x = 0         #x center of obstacle
-c_y = 0         #y center of obstacle
-r = 0           #radius of obstacle
-visual = 2      #0 = none, 1 = animation, 2 = velocity at one point
+T = 1000       #Amount of time steps
+dp = 100       #Pressure gradient
+tube = False     #Flow in a tube
+bump = False     #Bump on side of tube
+obst = 2        #0 = none, 1 = square, 2 = circle
+c_x = int(N/5)  #x center of obstacle
+c_y = int(M/2)  #y center of obstacle
+r = 5           #radius of obstacle
+visual = 1      #0 = none, 1 = animation, 2 = velocity at one point
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
@@ -69,14 +69,14 @@ def draw_boundary(tube,bump,obst,c_x,c_y,r):
         boundary[-1,:] = 1
 
     if bump:
-        boundary[1,int(N/5):int(N/5+3)] = 1
-        boundary[2,int(N/5+1):int(N/5+3)] = 1
-        boundary[3,int(N/5+2):int(N/5+3)] = 1
+        boundary[1,int(N/5-3):int(N/5)] = 1
+        boundary[2,int(N/5-2):int(N/5)] = 1
+        boundary[3,int(N/5-1):int(N/5)] = 1
 
     if obst == 1:
         boundary[c_x-r:c_x+r,c_y-r:c_y+r] = 1
     elif obst == 2:
-        x, y = numpy.mgrid[:M+1,:N+1]
+        y, x = np.mgrid[:M+1,:N+1]
         boundary[np.where((x-c_x)**2+(y-c_y)**2<=r**2)] = 1
 
     return boundary.astype(int)
@@ -86,7 +86,7 @@ c, dt, tau = sys_var(dx,cs,v)
 boundary = draw_boundary(tube,bump,obst,c_x,c_y,r)
 
 #Create grid
-X, Y = np.meshgrid(dx*np.arange(0,M+1),dx*np.arange(0,N+1))
+X, Y = np.meshgrid(dx*np.arange(0,N+1),dx*np.arange(0,M+1))
 
 #Unit vectors
 e = np.array([[0,0],\
@@ -111,6 +111,7 @@ rho = np.sum(f,axis=2)
 
 if visual == 1:
     fig = plt.figure()
+    plt.gca().invert_yaxis()
     camera = Camera(fig)
 elif visual == 2:
     point = np.zeros(T)
@@ -123,10 +124,18 @@ for i in range(T):
 
     if visual == 1:
         if i%10==0:
-            U = u[:,:,0]
-            V = u[:,:,1]
-            uabs = U**2+V**2
-            plt.imshow(uabs)
+            #plt.imshow(uabs)
+            if bump:
+                U = u[:10,int(N/5-10):int(N/5+10),0]
+                V = u[:10,int(N/5-10):int(N/5+10),1]
+                plt.imshow(1-boundary[:10,int(N/5-10):int(N/5+10)],cmap='gray',extent=[18.95,20.95,0.95,-0.05])
+                plt.quiver(X[:10,int(N/5-10):int(N/5+10)],Y[:10,int(N/5-10):int(N/5+10)],V,-U,pivot='mid')
+            else:
+                U = u[:,:,0]
+                V = u[:,:,1]
+                uabs = U**2+V**2
+                plt.imshow(1-boundary,cmap='gray',extent=[-0.05,N*dx-0.05,M*dx-0.05,-0.05],vmax=50000)
+                plt.imshow(uabs)
             camera.snap()
     elif visual == 2:
         point[i] = u[10,150,1]
