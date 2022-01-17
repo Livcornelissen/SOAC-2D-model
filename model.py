@@ -19,7 +19,7 @@ c_y = int(M/2)  #y center of obstacle
 r = 5           #radius of obstacle
 visual = 1      #0 = none, 1 = animation, 2 = velocity at one point
 mov_ball=True   #Simulating object moving by moving walls
-u0=np.array([0,1]) #velocity of ball movement
+u0=np.array([0,1]) #velocity of ball movement (coordinates are flipped)
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
