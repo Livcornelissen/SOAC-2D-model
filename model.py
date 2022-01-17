@@ -18,6 +18,8 @@ c_x = int(N/5)  #x center of obstacle
 c_y = int(M/2)  #y center of obstacle
 r = 5           #radius of obstacle
 visual = 1      #0 = none, 1 = animation, 2 = velocity at one point
+mov_ball=True   #Simulating object moving by moving walls
+u0=np.array([0,1]) #velocity of ball movement
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
@@ -57,8 +59,11 @@ def timestep(f,w,e,c,eb,tau):
 
     fnew = np.zeros(np.shape(f))
     for k in range(9):
-        fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1]))
-
+        for k in range(9):
+        if mov_ball:
+            fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1])+(6*rho0/c)*w[eb[k]]*np.dot(e[eb[k]],u0))
+        else:
+            fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1]))
     return u, fnew, rho
 
 def draw_boundary(tube,bump,obst,c_x,c_y,r):
