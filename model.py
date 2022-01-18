@@ -121,6 +121,34 @@ if visual == 1:
 elif visual == 2:
     point = np.zeros(T)
 
+#statistical measurement arrays
+avgU=np.zeros([M+1,N+1])
+avgV=np.zeros([M+1,N+1])
+avgUabs=np.zeros([M+1,N+1])
+
+sumU=np.zeros([M+1,N+1])
+sumV=np.zeros([M+1,N+1])
+sumUabs=np.zeros([M+1,N+1])
+
+sqU=np.zeros([M+1,N+1])
+sqV=np.zeros([M+1,N+1])
+sqUabs=np.zeros([M+1,N+1])
+
+
+SDtU=np.zeros([M+1,N+1,T+1])
+SDtV=np.zeros([M+1,N+1,T+1])
+SDtUabs=np.zeros([M+1,N+1,T+1])
+
+U_pert=np.zeros([T+1,M+1,N+1])
+#U_pert=np.zeros([M+1,N+1]) #for animation
+
+V_pert=np.zeros([T+1,M+1,N+1])
+Uabs_pert=np.zeros([T+1,M+1,N+1])
+
+Kurl=np.zeros([T+1,M+1,N+1])
+#Kurl=np.zeros([M+1,N+1]) #for animation    
+    
+    
 for i in range(T):
     u, f, rho = timestep(f,w,e,c,eb,tau)
 
@@ -137,14 +165,79 @@ for i in range(T):
                 plt.quiver(X[:10,int(N/5-10):int(N/5+10)],Y[:10,int(N/5-10):int(N/5+10)],V,-U,pivot='mid')
             else:
                 U = u[:,:,0]
+                sumU=sumU+U
+                sqU=sqU+np.square(U)
+                SDtU[:,:,i]=(sqU-np.square(sumU)/i)/i
+                avgU=sumU/i
+                U_pert[i,:,:]=U-avgU
+                #U_pert=U-avgU #for animation
+                
                 V = u[:,:,1]
-                vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
+                sumV=sumV+V
+                sqV=sqV+np.square(V)
+                SDtV[:,:,i]=(sqV-np.square(sumV)/i)/i
+                avgV=sumV/i
+                V_pert[i,:,:]=V-avgV
+        
+                Kurl =(-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
+                
+                uabs = np.sqrt(U**2+V**2)
+                sumUabs=sumUabs+uabs
+                sqUabs=sqUabs+np.square(uabs)
+                SDtUabs[:,:,i]=(sqUabs-np.square(sumUabs)/i)/i
+                avgUabs=sumUabs/i
+                Uabs_pert[i,:,:]=uabs-avgUabs
+                plt.imshow(1-boundary,cmap='gray',extent=[-0.05,N*dx-0.05,M*dx-0.05,-0.05],vmax=50000)
+                #plt.imshow(avgU)
+                #plt.imshow(U_pert)
+                plt.imshow(uabs,vmin=0,vmax=400)
+                #plt.imshow(Kurl)
+     
                 cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-5,5,0.1))
                 plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid')
             camera.snap()
     elif visual == 2:
         point[i] = u[10,150,1]
 
+plt.colorbar()
+
+#avgU=avgU/T #average over timesteps 
+SDu=(sqU-np.square(sumU)/T)/T #array of final SD for each gridpoint #this seems way too big, but maybe that is why it breaks down! 
+SDv=(sqV-np.square(sumV)/T)/T
+SDuabs=(sqUabs-np.square(sumUabs)/T)/T
+
+'can ammend to be for V or Uabs'
+#plt.plot(SDtU[5,5,:]) #can now pick any point on the grid and see the evolution of the standard deviation
+#plt.plot(SDtU[c_y+r,c_x+r,:]) #plot of SD for a point near ball (top right)
+#plt.plot(SDtU[20,45,:]) #plot of SD over time for a point beneath the ball
+
+'plot the perturbations of a given point over time' #not convinced works properly in the loop
+#plt.plot(U_pert[:,10,10])
+
+'this plots a plot for the final differences between velocity and the average velocity up to that point'
+#plt.plot(U-avgU)
+
+#plot of difference between vel and avg vel averaged across the entire grid
+#plt.plot(u_diff)
+
+'shows a countour plot of the SD at each gridpoint'
+#plt.contourf(SDu)
+#plt.contourf(SDv)
+#plt.contourf(SDuabs)
+#plt.colorbar()
+
+'if we plot the final curl value it gives a nice plot'
+#but need to get it to save every time
+#same problem with the pertubrations
+#plt.contourf(curl(Ncurl,Mcurl,U,V))
+
+'plot the curl of a given point over time?'
+#plt.plot(Kurl[:,10,10])
+
+#sdSD=(np.sum(np.square(SD))-(np.square(np.sum(SD)))/(M+N))/(M+N) #standard deviation across space
+
+#avgSDu=np.mean(SDu)      
+        
 print('Simulation at 100%')
 
 print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
