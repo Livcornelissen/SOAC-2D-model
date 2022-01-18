@@ -3,23 +3,22 @@ import matplotlib.pyplot as plt
 from celluloid import Camera
 
 #Parameters
-dx = 0.1        #Grid point size
-M = 100          #Height of domain
-N = 200         #Width of domain
-cs = 1.5e3      #Speed of sound
-v = 10          #Viscocity
+dx = 1        #Grid point size
+M = 200          #Height of domain
+N = 400         #Width of domain
+cs = 0.5e3      #Speed of sound
+v = 5          #Viscocity
 rho0 = 1e3      #Density
-T = 1000       #Amount of time steps
-dp = 100       #Pressure gradient
+T = 10000       #Amount of time steps
+dp = 500       #Pressure gradient
 tube = False     #Flow in a tube
 bump = False     #Bump on side of tube
 obst = 2        #0 = none, 1 = square, 2 = circle
 c_x = int(N/5)  #x center of obstacle
 c_y = int(M/2)  #y center of obstacle
-r = 5           #radius of obstacle
+r = 10           #radius of obstacle
 visual = 1      #0 = none, 1 = animation, 2 = velocity at one point
-mov_ball=True   #Simulating object moving by moving walls
-u0=np.array([0,1]) #velocity of ball movement (coordinates are flipped)
+Re = 90
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
@@ -51,7 +50,11 @@ def timestep(f,w,e,c,eb,tau):
     rho = np.sum(f,axis=2)
 
     u = calc_u(f,e,c,rho)
-    u[:,:,1] = u[:,:,1] + dp/rho
+    U = u[:,:,0]
+    V = u[:,:,1]
+    uabs = np.sqrt(U**2+V**2)
+    if np.mean(uabs) < Re/dx/2/r*v:
+        u[:,:,1] = u[:,:,1] + dp/rho
     
     s = calc_s(e,u,c,w)
 
@@ -59,16 +62,12 @@ def timestep(f,w,e,c,eb,tau):
 
     fnew = np.zeros(np.shape(f))
     for k in range(9):
-        for k in range(9):
-        if mov_ball:
-            fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1])+(6*rho0/c)*w[eb[k]]*np.dot(e[eb[k]],u0))
-        else:
-            fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1]))
+        fnew[:,:,k] = np.where(np.roll(boundary,e[k],axis=[0,1]),f[:,:,eb[k]],(1 - 1/tau)*np.roll(f[:,:,k],e[k],axis=[0,1]) + 1/tau*np.roll(f0[:,:,k],e[k],axis=[0,1]))
+
     return u, fnew, rho
 
 def draw_boundary(tube,bump,obst,c_x,c_y,r):
     boundary = np.zeros([M+1,N+1])
-
     if tube:
         boundary[0,:] = 1
         boundary[-1,:] = 1
@@ -83,6 +82,7 @@ def draw_boundary(tube,bump,obst,c_x,c_y,r):
     elif obst == 2:
         y, x = np.mgrid[:M+1,:N+1]
         boundary[np.where((x-c_x)**2+(y-c_y)**2<=r**2)] = 1
+        boundary[c_y+r+1,c_x] = 1
 
     return boundary.astype(int)
 
@@ -128,7 +128,7 @@ for i in range(T):
         print('Simulation at '+str(round(i/T*100))+'%')
 
     if visual == 1:
-        if i%10==0:
+        if i%100==0:
             #plt.imshow(uabs)
             if bump:
                 U = u[:10,int(N/5-10):int(N/5+10),0]
@@ -138,19 +138,21 @@ for i in range(T):
             else:
                 U = u[:,:,0]
                 V = u[:,:,1]
-                uabs = U**2+V**2
-                plt.imshow(1-boundary,cmap='gray',extent=[-0.05,N*dx-0.05,M*dx-0.05,-0.05],vmax=50000)
-                plt.imshow(uabs)
+                vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
+                cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-5,5,0.1))
+                plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid')
             camera.snap()
     elif visual == 2:
         point[i] = u[10,150,1]
 
 print('Simulation at 100%')
 
-print('Re = '+str(round(dx*M*np.max(u[:,:,1])/v,2)))
+print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
 
 if visual == 1:
-    animation = camera.animate()
+    plt.colorbar(cp)
+    plt.axis('equal')
+    animation = camera.animate(interval=10)
     animation.save('animation.gif')
     plt.show()
 elif visual == 2:
