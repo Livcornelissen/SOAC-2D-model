@@ -52,8 +52,6 @@ def timestep(f,w,e,c,eb,tau):
     rho = np.sum(f,axis=2)
 
     u = calc_u(f,e,c,rho)
-    u[:,:10,1] = np.exp(1-np.arange(1,11,1))*np.mean(u[:,-10:,1],axis=0)+(1-np.exp(1-np.arange(1,11,1)))*u[:,-10:,1]
-    u[:,:10,0] = (1-np.exp(1-np.arange(1,11,1)))*u[:,-10:,0]
     u[:,-10:,1] = np.exp(np.arange(1,11,1)-10)*np.mean(u[:,-10:,1],axis=0)+(1-np.exp(np.arange(1,11,1)-10))*u[:,-10:,1]
     u[:,-10:,0] = (1-np.exp(1-np.arange(1,11,1)))*u[:,-10:,0]
     U = u[:,:,0]
