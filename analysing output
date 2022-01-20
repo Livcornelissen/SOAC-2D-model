@@ -16,9 +16,12 @@ filename = 'ball_R_90'
 data = xr.open_dataset(datapath + filename+'.nc')
 
 #data [t,x,y]
+
+vorticity = data.vorticity
 u = data.u
-u2 = u**2
 v = data.v
+
+u2 = u**2
 v2 = v**2
 uabs = np.sqrt(u**2 + v**2)
 uabs2 = uabs**2
@@ -31,10 +34,10 @@ u_pert = u-U_mean
 v_pert = v-V_mean
 uabs_pert = uabs - uabs_mean
 
-"""variance  of uabs
-sigma**2 both should give same result, but they dont.... """
+"""variance  of uabs [x,y]
+sigma**2  """
 sigma_2 = (uabs2).mean(dim = 't') - (uabs.mean(dim = 't'))**2 
-sigma_reeks = (uabs2.sum(dim = 't') -  (uabs.sum(dim = 't'))**2/np.shape(u)[0])/np.shape(u)[0]
+sigma_reeks = ((uabs2.sum(dim = 't') -  (uabs.sum(dim = 't'))**2/np.shape(u)[0]))/np.shape(u)[0]
 
 
 
