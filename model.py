@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from celluloid import Camera
+import xarray as xr
+
+datapath = '/Users/livcornelissen/Documents/Study/UU/SOAC/SOAC-project/'
 
 #Parameters
 dx = 0.1         #Grid point size
@@ -21,6 +24,24 @@ visual = 1       #0 = none, 1 = animation, 2 = velocity at one point, 3 = Ellens
 Re = 10           #Reynolds number
 mov_ball = False            #Want the ball moving?
 u0 = np.array([0,-0.1])     #Speed of ball
+
+#make lists for export
+Vorticity = []
+Vel_u = []
+Vel_v = []
+
+#set up the export name.
+reynold = '_R_10'
+
+if obst == 2:
+    filename = 'ball'
+if obst == 1:
+    filename = 'square'
+if bump:
+    if tube:
+        filename = 'bumb_in_tube'
+    else:
+        filename = 'bumb'
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
@@ -122,12 +143,13 @@ w = np.array([4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36])
 f = rho0*w*np.ones([M+1,N+1,9])
 rho = np.sum(f,axis=2)
 
-if visual == 1:
+if visual == 1or visual == 3:
     fig = plt.figure(figsize=(10,8),dpi=200)
     plt.gca().invert_yaxis()
     camera = Camera(fig)
 elif visual == 2:
     point = np.zeros(T)
+
 
 for i in range(T):
     u, f, rho = timestep(f,w,e,c,eb,tau)
@@ -138,8 +160,11 @@ for i in range(T):
     if visual == 1:
         if i%100==0:
             U = u[:,:,0]
+            Vel_u.append(U)
             V = u[:,:,1]
+            Vel_v.append(V)
             vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
+            Vorticity.append(vort)
             cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*5,Re*5,Re/10))
             plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.001)
             camera.snap()
@@ -147,37 +172,61 @@ for i in range(T):
         point[i] = u[10,150,1]
     elif visual == 3:
         U = u[:,:,0]
-        sumU=sumU+U
-        sqU=sqU+np.square(U)
-        SDtU[:,:,i]=(sqU-np.square(sumU)/i)/i
-        avgU=sumU/i
-        U_pert[i,:,:]=U-avgU
+        Vel_u.append(U)
+        # sumU=sumU+U
+        # sqU=sqU+np.square(U)
+        # SDtU[:,:,i]=(sqU-np.square(sumU)/i)/i
+        # avgU=sumU/i
+        # U_pert[i,:,:]=U-avgU
         #U_pert=U-avgU #for animation
         
         V = u[:,:,1]
-        sumV=sumV+V
-        sqV=sqV+np.square(V)
-        SDtV[:,:,i]=(sqV-np.square(sumV)/i)/i
-        avgV=sumV/i
-        V_pert[i,:,:]=V-avgV
+        Vel_v.append(V)
+        # sumV=sumV+V
+        # sqV=sqV+np.square(V)
+        # SDtV[:,:,i]=(sqV-np.square(sumV)/i)/i
+        # avgV=sumV/i
+        # V_pert[i,:,:]=V-avgV
 
         Kurl =(-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
-        
-        uabs = np.sqrt(U**2+V**2)
-        sumUabs=sumUabs+uabs
-        sqUabs=sqUabs+np.square(uabs)
-        SDtUabs[:,:,i]=(sqUabs-np.square(sumUabs)/i)/i
-        avgUabs=sumUabs/i
-        Uabs_pert[i,:,:]=uabs-avgUabs
+        Vorticity.append(Kurl)
+        # uabs = np.sqrt(U**2+V**2)
+        # sumUabs=sumUabs+uabs
+        # sqUabs=sqUabs+np.square(uabs)
+        # SDtUabs[:,:,i]=(sqUabs-np.square(sumUabs)/i)/i
+        # avgUabs=sumUabs/i
+        # Uabs_pert[i,:,:]=uabs-avgUabs
 
         #plt.imshow(1-boundary,cmap='gray',extent=[-0.05,N*dx-0.05,M*dx-0.05,-0.05],vmax=50000)
         #plt.imshow(avgU)
-        plt.imshow(U_pert)
+        #plt.imshow(uabs)
         #plt.imshow(uabs,vmin=0,vmax=400)
-        #plt.imshow(Kurl)
+        plt.imshow(Kurl)
         camera.snap()
 
 print('Simulation at 100%')
+# put data into a dataset
+
+time = np.arange(0,T,100)
+y = np.arange(N+1)
+x = np.arange(M+1)
+
+ds = xr.Dataset(
+    data_vars=dict(
+        vorticity=(["t", "x", "y"], Vorticity),
+        u = (["t", "x", "y"], Vel_u),
+        v = (["t", "x", "y"], Vel_v)
+    ),
+    coords=dict(
+        x=(["x"], x),
+        y=(["y"], y),
+        time = (["t"], time)
+    ),
+    attrs=dict(description="Velocity and vorticity"),
+)
+
+ds.to_netcdf(datapath + filename + reynold+'.nc')
+
 
 print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
 
@@ -185,7 +234,7 @@ if visual == 1:
     plt.colorbar(cp)
     plt.axis('equal')
     animation = camera.animate(interval=10)
-    animation.save('animation.gif')
+    animation.save(datapath + 'animation.gif')
     #plt.show()
 elif visual == 2:
     plt.figure()
@@ -195,13 +244,13 @@ elif visual == 3:
     plt.colorbar()
     plt.axis('equal')
     animation = camera.animate(interval=10)
-    animation.save('animation.gif')
+    animation.save(datapath +'animation.gif')
     plt.show()
     
     #avgU=avgU/T #average over timesteps 
-    SDu=(sqU-np.square(sumU)/T)/T #array of final SD for each gridpoint #this seems way too big, but maybe that is why it breaks down! 
-    SDv=(sqV-np.square(sumV)/T)/T
-    SDuabs=(sqUabs-np.square(sumUabs)/T)/T
+    # SDu=(sqU-np.square(sumU)/T)/T #array of final SD for each gridpoint #this seems way too big, but maybe that is why it breaks down! 
+    # SDv=(sqV-np.square(sumV)/T)/T
+    # SDuabs=(sqUabs-np.square(sumUabs)/T)/T
 
     'can ammend to be for V or Uabs'
     #plt.plot(SDtU[5,5,:]) #can now pick any point on the grid and see the evolution of the standard deviation
@@ -234,4 +283,11 @@ elif visual == 3:
     #sdSD=(np.sum(np.square(SD))-(np.square(np.sum(SD)))/(M+N))/(M+N) #standard deviation across space
 
     #avgSDu=np.mean(SDu)
+    
+        
     #plt.show()
+    
+
+    
+    
+    
