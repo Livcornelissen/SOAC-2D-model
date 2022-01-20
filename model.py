@@ -155,11 +155,11 @@ for i in range(T):
     if visual == 1:
         if i%100==0:
             U = u[:,:,0]
-            Vel_u[i,:,:] = U
+            Vel_u[int(i/100),:,:] = U
             V = u[:,:,1]
-            Vel_v[i,:,:] = V
+            Vel_v[int(i/100),:,:] = V
             vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
-            Vorticity[i,:,:] = vort
+            Vorticity[int(i/100),:,:] = vort
             cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*5,Re*5,Re/10))
             plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.001)
             camera.snap()
