@@ -156,7 +156,7 @@ for i in range(T):
     if i == 0:
         start_time = time.time()
 
-    if i == 20:
+    if i == T/1000:
         current_time = time.time()
         duration = current_time - start_time
         est = duration*1000
@@ -191,7 +191,7 @@ elif visual == 2:
     plt.plot(point)
     plt.show() 
 
-time = np.arange(0,T,int(T/100))
+time = np.arange(0,T,100)
 y = np.arange(N+1)
 x = np.arange(M+1)
 
