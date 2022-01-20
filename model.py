@@ -21,27 +21,36 @@ c_x = int(N/5)   #x center of obstacle
 c_y = int(M/2)   #y center of obstacle
 r = 10           #radius of obstacle
 visual = 1       #0 = none, 1 = animation, 2 = velocity at one point, 3 = Ellens calculations
-Re = 10           #Reynolds number
+Re = 90           #Reynolds number
 mov_ball = False            #Want the ball moving?
 u0 = np.array([0,-0.1])     #Speed of ball
 
-#make lists for export
 Vorticity = []
 Vel_u = []
 Vel_v = []
 
-#set up the export name.
-reynold = '_R_10'
 
-if obst == 2:
-    filename = 'ball'
-if obst == 1:
-    filename = 'square'
-if bump:
-    if tube:
-        filename = 'bumb_in_tube'
-    else:
-        filename = 'bumb'
+if Re == 90:
+    if obst == 2:
+        filename = 'ball_90'
+    if obst == 1:
+        filename = 'square_90'
+    if bump:
+        if tube:
+            filename = 'bumb_in_tube_90'
+        else:
+            filename = 'bumb_90'
+            
+if Re == 10:
+    if obst == 2:
+        filename = 'ball_10'
+    if obst == 1:
+        filename = 'square_10'
+    if bump:
+        if tube:
+            filename = 'bumb_in_tube_10'
+        else:
+            filename = 'bumb_10'
 
 def sys_var(dx,cs,v):
     c = cs*np.sqrt(3)
@@ -225,7 +234,7 @@ ds = xr.Dataset(
     attrs=dict(description="Velocity and vorticity"),
 )
 
-ds.to_netcdf(datapath + filename + reynold+'.nc')
+ds.to_netcdf(datapath + filename +'.nc')
 
 
 print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
@@ -234,7 +243,7 @@ if visual == 1:
     plt.colorbar(cp)
     plt.axis('equal')
     animation = camera.animate(interval=10)
-    animation.save(datapath + 'animation.gif')
+    animation.save(datapath + filename+'_animation.gif')
     #plt.show()
 elif visual == 2:
     plt.figure()
@@ -244,7 +253,7 @@ elif visual == 3:
     plt.colorbar()
     plt.axis('equal')
     animation = camera.animate(interval=10)
-    animation.save(datapath +'animation.gif')
+    animation.save(datapath + filename+'_animation.gif')
     plt.show()
     
     #avgU=avgU/T #average over timesteps 
