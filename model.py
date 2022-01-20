@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from celluloid import Camera
 import xarray as xr
+import time
 
 datapath = ''
 
@@ -9,10 +10,10 @@ datapath = ''
 dx = 0.1         #Grid point size
 M = 200          #Height of domain
 N = 800          #Width of domain
-cs = 0.5e3       #Speed of sound
-v = 10           #Viscocity
+cs = 2e3       #Speed of sound
+v = 1.5           #Viscocity
 rho0 = 1e3       #Density
-T = 10000        #Amount of time steps
+T = 20000        #Amount of time steps
 dp = 250         #Pressure gradient
 tube = False     #Flow in a tube
 bump = False     #Bump on side of tube
@@ -21,7 +22,7 @@ c_x = int(N/5)   #x center of obstacle
 c_y = int(M/2)   #y center of obstacle
 r = 10           #radius of obstacle
 visual = 1       #0 = none, 1 = animation, 2 = velocity at one point
-Re = 10           #Reynolds number
+Re = 100           #Reynolds number
 mov_ball = False            #Want the ball moving?
 u0 = np.array([0,-0.1])     #Speed of ball
 
@@ -149,24 +150,46 @@ elif visual == 2:
 for i in range(T):
     u, f, rho = timestep(f,w,e,c,eb,tau)
 
-    if i%(T/10)==0:
+    if i%(T/100)==0:
         print('Simulation at '+str(round(i/T*100))+'%')
 
+    if i == 0:
+        start_time = time.time()
+
+    if i == 20:
+        current_time = time.time()
+        duration = current_time - start_time
+        est = duration*1000
+        print('Estimated total running time: '+str(round(est/60))+' minutes')
+
     if visual == 1:
-        if i%100==0:
+        if i%1000==0:
             U = u[:,:,0]
-            Vel_u[int(i/100),:,:] = U
+            Vel_u[int(i/1000),:,:] = U
             V = u[:,:,1]
-            Vel_v[int(i/100),:,:] = V
+            Vel_v[int(i/1000),:,:] = V
             vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
-            Vorticity[int(i/100),:,:] = vort
-            cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*5,Re*5,Re/10))
-            plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.001)
+            Vorticity[int(i/1000),:,:] = vort
+            cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*2,Re*2,Re/10))
+            plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.0001)
             camera.snap()
     elif visual == 2:
         point[i] = u[10,150,1]
 
 print('Simulation at 100%')
+
+print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
+
+if visual == 1:
+    plt.colorbar(cp)
+    plt.axis('equal')
+    animation = camera.animate(interval=10)
+    animation.save('animation.gif')
+    #plt.show()
+elif visual == 2:
+    plt.figure()
+    plt.plot(point)
+    plt.show() 
 
 time = np.arange(0,T,100)
 y = np.arange(N+1)
@@ -187,16 +210,3 @@ ds = xr.Dataset(
 )
 
 ds.to_netcdf(datapath + filename +'.nc')
-
-print('Re = '+str(round(dx*2*r*np.mean(np.sqrt(U**2+V**2))/v,2)))
-
-if visual == 1:
-    plt.colorbar(cp)
-    plt.axis('equal')
-    animation = camera.animate(interval=10)
-    animation.save('animation.gif')
-    #plt.show()
-elif visual == 2:
-    plt.figure()
-    plt.plot(point)
-    plt.show()
