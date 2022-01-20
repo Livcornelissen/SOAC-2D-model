@@ -136,9 +136,9 @@ if bump:
     else:
         filename = 'bumb_'+str(Re)
         
-Vorticity = np.zeros([int(T/1000),M+1,N+1])
-Vel_u = np.zeros([int(T/1000),M+1,N+1])
-Vel_v = np.zeros([int(T/1000),M+1,N+1])
+Vorticity = np.zeros([int(T/100),M+1,N+1])
+Vel_u = np.zeros([int(T/100),M+1,N+1])
+Vel_v = np.zeros([int(T/100),M+1,N+1])
 
 if visual == 1:
     fig = plt.figure(figsize=(16,8),dpi=200)
@@ -163,13 +163,13 @@ for i in range(T):
         print('Estimated total running time: '+str(round(est/60))+' minutes')
 
     if visual == 1:
-        if i%1000==0:
+        if i%100==0:
             U = u[:,:,0]
-            Vel_u[int(i/1000),:,:] = U
+            Vel_u[int(i/100),:,:] = U
             V = u[:,:,1]
-            Vel_v[int(i/1000),:,:] = V
+            Vel_v[int(i/100),:,:] = V
             vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
-            Vorticity[int(i/1000),:,:] = vort
+            Vorticity[int(i/100),:,:] = vort
             cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*2,Re*2,Re/10))
             plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.0001)
             camera.snap()
@@ -191,7 +191,7 @@ elif visual == 2:
     plt.plot(point)
     plt.show() 
 
-time = np.arange(0,T,int(T/1000))
+time = np.arange(0,T,int(T/100))
 y = np.arange(N+1)
 x = np.arange(M+1)
 
