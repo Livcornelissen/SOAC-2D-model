@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 from celluloid import Camera
 import xarray as xr
 import time
+import timeit
+
+start = timeit.default_timer()
+
+
 
 datapath = ''
 
@@ -211,3 +216,11 @@ ds = xr.Dataset(
 )
 
 ds.to_netcdf(datapath + filename +'.nc')
+
+
+
+stop = timeit.default_timer()
+
+print('Time: ', stop - start) 
+
+
