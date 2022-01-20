@@ -136,9 +136,9 @@ if bump:
     else:
         filename = 'bumb_'+str(Re)
         
-Vorticity = np.zeros([int(T/100),M+1,N+1])
-Vel_u = np.zeros([int(T/100),M+1,N+1])
-Vel_v = np.zeros([int(T/100),M+1,N+1])
+Vorticity = np.zeros([int(T/1000),M+1,N+1])
+Vel_u = np.zeros([int(T/1000),M+1,N+1])
+Vel_v = np.zeros([int(T/1000),M+1,N+1])
 
 if visual == 1:
     fig = plt.figure(figsize=(16,8),dpi=200)
@@ -191,7 +191,7 @@ elif visual == 2:
     plt.plot(point)
     plt.show() 
 
-time = np.arange(0,T,100)
+time = np.arange(0,T,int(T/1000))
 y = np.arange(N+1)
 x = np.arange(M+1)
 
