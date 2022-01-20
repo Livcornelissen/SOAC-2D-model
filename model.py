@@ -5,7 +5,7 @@ from celluloid import Camera
 #Parameters
 dx = 0.1         #Grid point size
 M = 200          #Height of domain
-N = 400          #Width of domain
+N = 800          #Width of domain
 cs = 0.5e3       #Speed of sound
 v = 10           #Viscocity
 rho0 = 1e3       #Density
@@ -123,7 +123,7 @@ f = rho0*w*np.ones([M+1,N+1,9])
 rho = np.sum(f,axis=2)
 
 if visual == 1:
-    fig = plt.figure(figsize=(10,8),dpi=200)
+    fig = plt.figure(figsize=(16,8),dpi=200)
     plt.gca().invert_yaxis()
     camera = Camera(fig)
 elif visual == 2:
