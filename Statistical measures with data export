@@ -1,0 +1,94 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 24 14:57:14 2022
+
+@author: ellen
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+M = 200          #Height of domain
+N = 800         #width of the domain
+
+'to define Vel_u etc.'
+data = xr.open_dataset(datapath + filename+'.nc')
+
+'t' #is the time at which we want to evaluate statistical parameters
+
+t=int(4000/100)
+
+#average velocities calculations
+'the sum of all velocities per grid cell up to a time t'
+SumU=np.zeros([M+1,N+1])
+for i in range(M+1):
+    for j in range(N+1):
+        SumU[i,j]=np.sum(Vel_u[0:t,i,j])
+
+'from this can define the average velocity at each point up until a time t'
+AvgU_t=SumU/t
+
+'average velocities at each grid cell up until time t'
+Avg_u_grid=np.mean(AvgU_t)
+
+'histogram of average velocities up until time t'
+round_Avg_u=np.around(AvgU_t,decimals=0)
+plt.hist(round_Avg_u)
+
+'plots a density distribution without having to round to any decimal places'
+sns.distplot(AvgU_t)
+
+#for abs u, calculate u_abs=(Vel_u**2+Vel_v**2), for v use Vel_v
+
+##perturbation calculations, to check perturbations from average 
+'first make use of final average instead of one up until time t'
+Avg_u_final=np.zeros([M+1,N+1])
+for i in range(M+1):
+    for j in range(N+1):
+        Avg_u_final[i,j]=(np.sum(Vel_u[:,i,j]))/T
+
+'to check perturbation from final average up until a time t'
+Pert_U=np.zeros([t,M+1,N+1])
+for i in range(t):
+    Pert_U[t,:,:]=Vel_u[t,:,:]-Avg_u_final
+        
+
+##standard deviation/variance calculations
+'the sum of the squared velocities at each grid cell up until time t'
+SqU=np.zeros([M+1,N+1])
+for i in range(M+1):
+    for j in range(N+1):
+        SqU[i,j]=np.sum(np.square(Vel_u[0:t,i,j]))
+
+'using SumU and SqU we can calculate the variance at each cell up  time t'
+#variance per grid cell
+Var_u=np.zeros([M+1,N+1])
+Var_u=(SqU-np.square(SumU)/t)/t
+
+'make a histogram across space of all variances up until a given time t'
+'need to decrease decimal places so that histogram is possible'
+int_Var_u=int(Var_u)        #complete discretisation
+round_Var_u=np.around(Var_u,decimals=4)     #round to certain decimal places
+#reshape array into vector as want to consider variance across all space
+Var_u_vec= np.reshape(round_Var_u, -1)
+
+'make a histogram of variances over the grid up until time t'
+np.histogram(Var_u_vec) #or np.histogram(round_Var_u)
+plt.hist(Var_u_vec)
+
+'calculate variance across the grid of the variance up until time t '
+Var_u_grid=np.var(Var_u_vec)
+
+'standard deviation is the square root of variance'
+SD_u_grid=np.sqrt(Var_u_grid)
+
+
+
+
+
+
+
+
+
+       
