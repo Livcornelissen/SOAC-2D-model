@@ -3,32 +3,26 @@ import matplotlib.pyplot as plt
 from celluloid import Camera
 import xarray as xr
 import time
-import timeit
-
-start = timeit.default_timer()
-
-
 
 datapath = ''
 
 #Parameters
 dx = 0.1         #Grid point size
 M = 200          #Height of domain
-N = 800          #Width of domain
+N = 400          #Width of domain
 cs = 2e3       #Speed of sound
 v = 1.5           #Viscocity
 rho0 = 1e3       #Density
-T = 20000        #Amount of time steps
-t_saving = 100     #after how many steps, save the data
+T = 50000        #Amount of time steps
 dp = 250         #Pressure gradient
 tube = False     #Flow in a tube
 bump = False     #Bump on side of tube
-obst = 2         #0 = none, 1 = square, 2 = circle
+obst = 1         #0 = none, 1 = square, 2 = circle
 c_x = int(N/5)   #x center of obstacle
 c_y = int(M/2)   #y center of obstacle
 r = 10           #radius of obstacle
 visual = 1       #0 = none, 1 = animation, 2 = velocity at one point
-Re = 100           #Reynolds number
+Re = 110           #Reynolds number
 mov_ball = False            #Want the ball moving?
 u0 = np.array([0,-0.1])     #Speed of ball
 
@@ -67,7 +61,11 @@ def timestep(f,w,e,c,eb,tau):
     U = u[:,:,0]
     V = u[:,:,1]
     uabs = np.sqrt(U**2+V**2)
-    if np.mean(uabs) < Re/dx/2/r*v:
+    if obst == 0:
+        dom = M
+    else:
+        dom = 2*r
+    if np.max(uabs) < Re/dx/dom*v:
         u[:,:,1] = u[:,:,1] + dp/rho
     
     s = calc_s(e,u,c,w)
@@ -100,7 +98,7 @@ def draw_boundary(tube,bump,obst,c_x,c_y,r):
     elif obst == 2:
         y, x = np.mgrid[:M+1,:N+1]
         boundary[np.where((x-c_x)**2+(y-c_y)**2<=r**2)] = 1
-        boundary[c_y+r+1,c_x] = 1
+        boundary[c_y+1,c_x+r+1] = 1
 
     return boundary.astype(int)
 
@@ -142,9 +140,9 @@ if bump:
     else:
         filename = 'bumb_'+str(Re)
         
-Vorticity = np.zeros([int(T/t_saving),M+1,N+1])
-Vel_u = np.zeros([int(T/t_saving),M+1,N+1])
-Vel_v = np.zeros([int(T/t_saving),M+1,N+1])
+Vorticity = np.zeros([int(T/100),M+1,N+1])
+Vel_u = np.zeros([int(T/100),M+1,N+1])
+Vel_v = np.zeros([int(T/100),M+1,N+1])
 
 if visual == 1:
     fig = plt.figure(figsize=(16,8),dpi=200)
@@ -169,15 +167,16 @@ for i in range(T):
         print('Estimated total running time: '+str(round(est/60))+' minutes')
 
     if visual == 1:
-        if i%t_saving==0:
+        if i%100==0:
             U = u[:,:,0]
-            Vel_u[int(i/t_saving),:,:] = U
+            Vel_u[int(i/100),:,:] = U
             V = u[:,:,1]
-            Vel_v[int(i/t_saving),:,:] = V
+            Vel_v[int(i/100),:,:] = V
+            print(np.mean(np.sqrt(U**2+V**2)))
             vort = (-U+np.roll(U,1,axis=1))/dx - (V-np.roll(V,1,axis=0))/dx
-            Vorticity[int(i/t_saving),:,:] = vort
+            Vorticity[int(i/100),:,:] = vort
             cp = plt.contourf(X,Y,vort,cmap='bwr',levels=np.arange(-Re*2,Re*2,Re/10))
-            plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.0001)
+            plt.quiver(X[::5,::5],Y[::5,::5],V[::5,::5],-U[::5,::5], pivot='mid', width=0.0005)
             camera.snap()
     elif visual == 2:
         point[i] = u[10,150,1]
@@ -197,7 +196,7 @@ elif visual == 2:
     plt.plot(point)
     plt.show() 
 
-time = np.arange(0,T,t_saving)
+time = np.arange(0,T,100)
 y = np.arange(N+1)
 x = np.arange(M+1)
 
@@ -216,11 +215,3 @@ ds = xr.Dataset(
 )
 
 ds.to_netcdf(datapath + filename +'.nc')
-
-
-
-stop = timeit.default_timer()
-
-print('Time: ', stop - start) 
-
-
