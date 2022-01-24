@@ -7,7 +7,7 @@ Created on Mon Jan 24 14:57:14 2022
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+import seaborn as sns #this package also looks like it may have some other useful ways of representing statistical data
 
 M = 200          #Height of domain
 N = 800         #width of the domain
@@ -36,7 +36,7 @@ Avg_u_grid=np.mean(AvgU_t)
 round_Avg_u=np.around(AvgU_t,decimals=0)
 plt.hist(round_Avg_u)
 
-'plots a density distribution without having to round to any decimal places'
+'plots a density distribution without having to round to any decimal places' #could be good to use elsewhere
 sns.distplot(AvgU_t)
 
 #for abs u, calculate u_abs=(Vel_u**2+Vel_v**2), for v use Vel_v
