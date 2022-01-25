@@ -1,0 +1,197 @@
+import xarray as xr
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+datapath = '/Users/livcornelissen/Documents/Study/UU/SOAC/SOAC-project/'
+filename = 'square_150'
+
+data = xr.open_dataset(datapath + filename+'.nc')
+
+
+#data [t,x,y]
+vorticity = data.vorticity
+u = data.u
+M=u.shape[1]-1
+N=u.shape[2]-1
+c_x = int(N/5)   #x center of obstacle
+c_y = int(M/2)
+r = 10
+u2 = u**2 #squares velocity at every point in time for every grid cell
+v = data.v
+v2 = v**2
+uabs = np.sqrt(u**2 + v**2) #abs vel for every point in time per grid cell
+uabs2 = uabs**2 #square of vel for every point in time and grid cell
+#mean values over time [x,y]
+U_mean = u.mean(dim = 't') #gets final average of vel after all time per grid cell
+V_mean = v.mean(dim = 't')
+uabs_mean = uabs.mean(dim = 't')
+#pertubations [t,x,y]
+u_pert = u-U_mean #takes away U_mean at every time point (one U_mean per grid cell)
+v_pert = v-V_mean
+uabs_pert = uabs - uabs_mean
+
+
+"""variance  of uabs """
+var_2 = (uabs2).mean(dim = 't') - (uabs.mean(dim = 't'))**2 
+var_reeks = (uabs2.sum(dim = 't') -  (uabs.sum(dim = 't'))**2/np.shape(u)[0])/np.shape(u)[0]
+
+"""variance of uabs_pert"""
+#gives final variance of each grid cell
+#these lines get rid of the time axis
+var_uabs_pert = (uabs_pert**2).mean(dim = 't') - (uabs_pert.mean(dim = 't'))**2
+
+var_vorticity = (vorticity**2).mean(dim = 't') - (vorticity.mean(dim = 't'))**2
+
+
+
+#calculate variance and SD per time step.
+#var_upert = []
+#sd = []
+#var_vort = []
+
+#var_uabs_pert has already been converted into something with no time axis
+
+#this loops over the x coordinate and not the time coordinate
+#gives variance along a certain row of the grid 
+#is this meant to be giving us variance across the grid ?
+#for T in range(len(data.time)):    #the length of this loops mean that all the arrays fit for plotting but are infact plotting the first 100 rows not time points
+#    variance = np.mean(var_uabs_pert[T]**2) - (np.mean(var_uabs_pert[T]))**2
+#    var_vort.append(np.mean(var_vorticity[T]**2) - (np.mean(var_vorticity[T]))**2)
+#    var_upert.append(variance)
+#    sd.append(np.sqrt(variance))
+    
+var_uabs_t=np.zeros([len(data.time),M+1,N+1]) 
+var_uabs_pert_t=np.zeros([len(data.time),M+1,N+1])     
+var_u_t=np.zeros([len(data.time),M+1,N+1]) 
+var_u_pert_t=np.zeros([len(data.time),M+1,N+1]) 
+var_vort_t=np.zeros([len(data.time),M+1,N+1])
+
+
+'variance of uabs at each time step for each grid cell'
+'variance of the perturbation at each time step for each grid cell'
+'more time points are taken into account in each loop'
+for T in range(len(data.time)):
+    var_uabs_t[T]=uabs2[0:T].mean(dim='t')-(uabs[0:T].mean(dim='t'))**2
+    var_uabs_pert_t[T]=((uabs_pert[0:T])**2).mean(dim ='t')-(uabs_pert[0:T].mean(dim='t'))**2
+    var_u_t[T]=((u[0:T])**2).mean(dim='t')-(u[0:T].mean(dim='t'))**2
+    var_u_pert_t[T]=((u_pert[0:T])**2).mean(dim ='t')-(u_pert[0:T].mean(dim='t'))**2
+    var_vort_t[T]=((vorticity[0:T])**2).mean(dim ='t')-(vorticity[0:T].mean(dim='t'))**2
+    
+    
+ 'standard deviations'   
+SD_uabs_t=np.sqrt(var_uabs_t)    
+SD_uabs_pert_t=np.sqrt(var_uabs_pert_t)
+SD_vort_t=np.sqrt(var_vort_t)
+
+
+'calculate parameters variances across the grid in each time step'
+#variance of abs velocity
+var_uabs_grid=(np.sum(uabs2,axis=(1,2))-np.square(np.sum(uabs,axis=(1,2)))/(M*N))/(M*N)
+#variance of the variance of abs velocity
+var_uabs_grid=(np.sum(var_uabs_t**2,axis=(1,2))-np.square(np.sum(var_uabs_t,axis=(1,2)))/(M*N))/(M*N)
+#variance in the perturbation
+var_uabs_pert_grid=(np.sum(uabs_pert**2,axis=(1,2))-np.square(np.sum(uabs_pert,axis=(1,2)))/(M*N))/(M*N)
+#variance of the variance of perturbation 
+var_var_uabs_pert_grid=(np.sum(var_uabs_pert_t**2,axis=(1,2))-np.square(np.sum(var_uabs_pert_t,axis=(1,2)))/(M*N))/(M*N)
+#variance of the vorticity
+var_vort_grid=(np.sum(var_vort_t**2,axis=(1,2))-np.square(np.sum(var_vort_t,axis=(1,2)))/(M*N))/(M*N)
+
+'plotting'
+#histogram of variance distribution across grid at a chosen time point
+t_snap=80
+plt.close('all')
+plt.hist(var_uabs_t[t_snap])
+plt.title(filename + ': Variance distribution across grid at time 80') #need to fix this
+plt.xlabel('variance in absolute velocity')
+plt.ylabel('frequency')
+plt.show()
+#sns.distplot(var_uabs_t[t_snap,:,:])
+
+
+#histogram of absolute velocity perturbation from mean at a chosen time
+plt.close('all')
+plt.hist(uabs_pert[10])
+plt.title(filename +' u_perturbed [10]')
+plt.savefig(datapath + filename +'upert_hist_10.png')
+plt.show()
+
+#plot of absolute velocity vs mean velocity for a given point
+plt.close('all')
+plt.plot(data.time,uabs[:,c_y+5,c_x+r+5],label='absolute velocity') 
+plt.plot(data.time,[U_mean[c_y+5,c_x+r+5]]*len(data.time),label='mean velocity')
+plt.title(filename+ ': Evolution of absolute velocity vs mean velocity for a chosen point')
+plt.xlabel('time ')
+plt.ylabel('velocity (m/s)')
+plt.legend()
+plt.show()
+
+#plot of perturbation from mean over time for a chosen cell
+plt.close('all')
+plt.plot(data.time,u_pert[:,c_y+5,c_x+r+5],label='perturbation')  
+plt.title(filename+': Perturbation from mean velocity over time for grid cell above obstacle')
+plt.xlabel('time ')
+plt.ylabel('velocity (m/s)')
+plt.legend()
+plt.show()
+
+#plot variance of the variance of the velocity across the entire grid through time
+plt.close('all')
+plt.plot(data.time,var_uabs_grid)
+plt.title(filename+': Evolution of the variance across the grid of the velocity variance')
+plt.xlabel('time')
+plt.ylabel('velocity variance (m/s)')
+plt.show()
+
+#histogram of variance of the perturbation at a chosen time step
+plt.close('all')
+plt.hist(var_uabs_pert_t[20])
+plt.title(filename+': Distribution of variance in u abs perturbation at time 20')
+plt.xlabel('variance in u abs perturbation')
+plt.ylabel('frequency')
+plt.show()
+
+
+#plot the variance of the perturbation across the grid over time 
+plt.close('all')
+plt.plot(data.time,var_uabs_pert_grid)
+plt.title(filename+': Evolution of the variance across the grid of each cell\'s perturbation from its mean velocity')
+plt.xlabel('time')
+plt.ylabel('velocity (m/s)')
+plt.show()
+      
+
+#plot variance of the vorticity over time 
+plt.close('all')
+plt.plot(data.time,var_vort_grid)
+plt.title(filename+': Evolution of the variance of the vorticity across the grid')
+plt.xlabel('time')
+plt.ylabel('vorticity (rotations/time)')
+plt.show()
+
+
+
+#This will plot the variance across rows  
+#plot variances
+#plt.close('all')
+#plt.plot(data.time,var_upert)
+#plt.title(filename + ' variance of u_pert')
+#plt.xlabel(' timesteps')
+#plt.show()
+
+#plot sd
+#plt.close('all')
+#plt.plot(data.time,sd) 
+#plt.title(filename + ' standart deviation')
+#plt.xlabel('timesteps')
+#plt.show()
+
+
+#plt.close('all')
+#plt.plot(data.time,var_vort)
+#plt.title(filename + ' variance of vorticity')
+#plt.xlabel(' timesteps')
+#plt.savefig(datapath + filename+'var_vorticity.png')
+#plt.show()
+
+
