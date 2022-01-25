@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan 20 16:19:23 2022
+
+@author: livcornelissen
+"""
+
+import xarray as xr
+import matplotlib.pyplot as plt
+import numpy as np
+
+datapath = '/Users/livcornelissen/Documents/Study/UU/SOAC/SOAC-project/'
+filename = 'square_150'
+
+data = xr.open_dataset(datapath + filename+'.nc')
+
+#data [t,x,y]
+vorticity = data.vorticity
+u = data.u
+u2 = u**2
+v = data.v
+v2 = v**2
+uabs = np.sqrt(u**2 + v**2)
+uabs2 = uabs**2
+#mean values over time [x,y]
+U_mean = u.mean(dim = 't')
+V_mean = v.mean(dim = 't')
+uabs_mean = uabs.mean(dim = 't')
+#pertubations [t,x,y]
+u_pert = u-U_mean
+v_pert = v-V_mean
+uabs_pert = uabs - uabs_mean
+
+
+"""variance  of uabs """
+var_2 = (uabs2).mean(dim = 't') - (uabs.mean(dim = 't'))**2 
+var_reeks = (uabs2.sum(dim = 't') -  (uabs.sum(dim = 't'))**2/np.shape(u)[0])/np.shape(u)[0]
+
+"""variance of uabs_pert"""
+var_uabs_pert = (uabs_pert**2).mean(dim = 't') - (uabs_pert.mean(dim = 't'))**2
+
+var_vorticity = (vorticity**2).mean(dim = 't') - (vorticity.mean(dim = 't'))**2
+
+
+#calculate variance and SD per time step.
+var_upert = []
+sd = []
+var_vort = []
+
+for T in range(len(data.time)):
+    variance = np.mean(var_uabs_pert[T]**2) - (np.mean(var_uabs_pert[T]))**2
+    var_vort.append(np.mean(var_vorticity[T]**2) - (np.mean(var_vorticity[T]))**2)
+    var_upert.append(variance)
+    sd.append(np.sqrt(variance))
+
+
+#plot variances
+
+plt.close('all')
+plt.plot(data.time,var_upert)
+plt.title(filename + ' variance of u_pert')
+plt.xlabel(' timesteps')
+plt.show()
+
+#plot sd
+plt.close('all')
+plt.plot(data.time,sd) 
+plt.title(filename + ' standart deviation')
+plt.xlabel('timesteps')
+plt.show()
+
+#plot variance of uabs_pert for certain time step
+plt.close('all')
+plt.hist(var_uabs_pert[0])
+
+
+#plot u pert at  certain timestep
+plt.close('all')
+plt.hist(uabs_pert[10])
+plt.title(filename +' u_perturbed [10]')
+plt.savefig(datapath + filename +'upert_hist_10.png')
+plt.show()
+
+plt.close('all')
+plt.plot(data.time,var_vort)
+plt.title(filename + ' variance of vorticity')
+plt.xlabel(' timesteps')
+plt.savefig(datapath + filename+'var_vorticity.png')
+plt.show()
+
