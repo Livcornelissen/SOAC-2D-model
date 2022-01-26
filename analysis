@@ -55,6 +55,39 @@ for T in range(len(data.time)):
     sd.append(np.sqrt(variance))
 
 
+#turbulent kinetic energy:
+
+E_turb = 0.5 * uabs_pert*2
+E_kin = 0.5 * uabs*2
+E_frac = abs(E_turb)/abs(E_kin)
+#mask out all the inf values.
+E_frac = np.ma.masked_where(E_frac >1, E_frac)
+
+fig = plt.figure(figsize=(10,4))
+plt.gca().invert_yaxis()
+camera = Camera(fig)
+
+#make animation  of turbulent energy
+for t in range(1,len(data.time)):
+    cp = plt.contourf(E_turb[t], cmap = 'bwr', levels= np.arange(-110,110,10) )
+    camera.snap()
+
+plt.colorbar(cp)
+#plt.axis('equal')
+animation = camera.animate(interval=10)
+animation.save(datapath + filename+'_E_turb_animation.gif', writer = 'pillow')
+
+#make animation of FRACTION of turbulent energy
+for t in range(1,len(data.time)):
+    cp = plt.contourf(E_frac[t], cmap = 'Greys', levels= np.arange(0,1.1,0.1) )
+    camera.snap()
+
+plt.colorbar(cp)
+#plt.axis('equal')
+animation = camera.animate(interval=10)
+animation.save(datapath + filename+'_E_frac_animation.gif', writer = 'pillow')
+
+
 #plot variances
 
 plt.close('all')
