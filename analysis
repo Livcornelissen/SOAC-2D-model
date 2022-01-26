@@ -122,8 +122,8 @@ plt.xlabel('timesteps')
 plt.show()
 
 #plot variance of uabs_pert for certain time step
-plt.close('all')
-plt.hist(var_uabs_pert[0])
+#plt.close('all')
+#plt.hist(var_uabs_pert[0]) #also defined on x coordinate
 
 
 #plot u pert at  certain timestep
