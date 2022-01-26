@@ -44,16 +44,19 @@ var_vorticity = (vorticity**2).mean(dim = 't') - (vorticity.mean(dim = 't'))**2
 
 
 #calculate variance and SD per time step.
+var_uabs=[]
 var_upert = []
-sd = []
 var_vort = []
 
 for T in range(len(data.time)):
-    variance = np.mean(var_uabs_pert[T]**2) - (np.mean(var_uabs_pert[T]))**2
-    var_vort.append(np.mean(var_vorticity[T]**2) - (np.mean(var_vorticity[T]))**2)
-    var_upert.append(variance)
-    sd.append(np.sqrt(variance))
+    var_uabs.append(np.mean(uabs[T]**2)-(np.mean(uabs[T]))**2)
+    var_upert.append(np.mean(uabs_pert[T]**2) - (np.mean(uabs_pert[T]))**2)
+    var_vort.append(np.mean(vorticity[T]**2) - (np.mean(vorticity[T]))**2)
 
+'standard deviations'
+sd_uabs=np.sqrt(var_uabs)
+sd_upert=np.sqrt(var_upert)
+sd_vort=np.sqrt(var_vort)
 
 #turbulent kinetic energy:
 
@@ -96,10 +99,25 @@ plt.title(filename + ' variance of u_pert')
 plt.xlabel(' timesteps')
 plt.show()
 
-#plot sd
+#plot standard deviations
+#absolute velocity SD
 plt.close('all')
-plt.plot(data.time,sd) 
-plt.title(filename + ' standart deviation')
+plt.plot(data.time,sd_uabs) 
+plt.title(filename + ' standard deviation of absolute velocity')
+plt.xlabel('timesteps')
+plt.show()
+
+#U pertubration SD
+plt.close('all')
+plt.plot(data.time,sd_upert) 
+plt.title(filename + ' standard deviation of the perturbation of u velocity')
+plt.xlabel('timesteps')
+plt.show()
+
+#Vorticity SD 
+plt.close('all')
+plt.plot(data.time,sd_vort) 
+plt.title(filename + ' standard deviation of vorticity')
 plt.xlabel('timesteps')
 plt.show()
 
